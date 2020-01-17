@@ -17,7 +17,7 @@ def main():
   test_dir = os.path.join(base_dir, 'test')
 
   model = models.Sequential()
-  model.add(layers.Conv2D(16, (3, 3), activation='relu', input_shape=(258, 217, 3)))
+  model.add(layers.Conv2D(16, (3, 3), activation='relu', input_shape=(256, 256, 3)))
   model.add(layers.Conv2D(16, (3, 3), activation='relu'))
   model.add(layers.MaxPooling2D((2, 2)))
   model.add(layers.Conv2D(32, (3, 3), activation='relu'))
@@ -29,16 +29,16 @@ def main():
 
 
   model.compile(loss='binary_crossentropy', optimizer=optimizers.RMSprop(lr=1e-4), metrics=['acc'])
-  
-  train_datagen = ImageDataGenerator(rescale=1./255)
+
+  train_datagen = ImageDataGenerator(rescale=1./255, rotation_range=45)
   test_datagen = ImageDataGenerator(rescale=1./255)
 
-  train_generator = train_datagen.flow_from_directory(train_dir, target_size=(258, 217), batch_size=20, class_mode='binary')
+  train_generator = train_datagen.flow_from_directory(train_dir, target_size=(256, 256), batch_size=20, class_mode='binary')
 
-  validation_generator = test_datagen.flow_from_directory(validation_dir, target_size=(258, 217), batch_size=20, class_mode='binary')
+  validation_generator = test_datagen.flow_from_directory(validation_dir, target_size=(256, 256), batch_size=20, class_mode='binary')
 
-  history = model.fit_generator(train_generator, steps_per_epoch=100, epochs=10, validation_data=validation_generator, validation_steps=50)
-  
+  history = model.fit_generator(train_generator, steps_per_epoch=1000, epochs=20, validation_data=validation_generator, validation_steps=50)
+
 
   model.save(os.path.join(base_dir, 'output/model.h5'))
 
@@ -60,7 +60,7 @@ def main():
   plt.plot(epochs, val_loss, 'b', label='Validation loss')
   plt.title('Training and validation loss')
   plt.legend()
-	
+
   plt.savefig('result_2.png')
 
 if __name__ == "__main__":
