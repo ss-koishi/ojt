@@ -21,11 +21,17 @@ vector< string > get_all_image(string path) {
   return ret;
 }
 
+bool gray_mode = false;
+
 int main(int argc, char *argv[]) {
 
   if(argc < 2) {
       cout << "error: number of arguments must be 1." << endl;
       exit(0);
+  }
+
+  if(argc == 4) {
+      if(argv[3][0] == '1') gray_mode = true;
   }
 
   double train_p = atof(argv[1]);
@@ -66,9 +72,11 @@ int main(int argc, char *argv[]) {
       if(i < train_ok_num) {
           cout << "cp ./OK/" + ok_list[i] + " ./train/OK/" + ok_list[i] << endl;
           system(("cp ./OK/" + ok_list[i] + " ./train/OK/" + ok_list[i]).c_str());
+          system(("convert ./train/OK/" + ok_list[i] + " -type GrayScale ./train/OK/" + ok_list[i]).c_str());
       } else {
           cout << "cp ./OK/" + ok_list[i] + " ./validation/OK/" + ok_list[i] << endl;
           system(("cp ./OK/" + ok_list[i] + " ./validation/OK/" + ok_list[i]).c_str());
+          system(("convert ./validation/OK/" + ok_list[i] + " -type GrayScale ./validation/OK/" + ok_list[i]).c_str());
       }
   }
 
@@ -77,9 +85,11 @@ int main(int argc, char *argv[]) {
       if(i < train_ng_num) {
           cout << "cp ./NG/" + ng_list[i] + " ./train/NG/" + ng_list[i] << endl;
           system(("cp ./NG/" + ng_list[i] + " ./train/NG/" + ng_list[i]).c_str());
+          system(("convert ./train/NG/" + ng_list[i] + " -type GrayScale ./train/NG/" + ng_list[i]).c_str());
       } else {
           cout << "cp ./NG/" + ng_list[i] + " ./validation/NG/" + ng_list[i] << endl;
           system(("cp ./NG/" + ng_list[i] + " ./validation/NG/" + ng_list[i]).c_str());
+          system(("convert ./validation/NG/" + ng_list[i] + " -type GrayScale ./validation/NG/" + ng_list[i]).c_str());
       }
   }
 }
