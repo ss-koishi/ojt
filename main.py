@@ -11,8 +11,8 @@ from matplotlib import pyplot as plt
 
 IMG_HEIGHT = 150
 IMG_WIDTH = 150
-_epochs = 200
-batch_size = 16
+_epochs = 100
+batch_size = 50
 
 def main():
   base_dir = '/home/ubuntu/project/ojt'
@@ -37,12 +37,12 @@ def main():
   model = models.Sequential([
     Conv2D(16, 3, padding='same', activation='relu', input_shape=(IMG_HEIGHT, IMG_WIDTH ,3)),
     MaxPooling2D(),
-    Dropout(0.2),
+    Dropout(0.4),
     Conv2D(32, 3, padding='same', activation='relu'),
     MaxPooling2D(),
     Conv2D(64, 3, padding='same', activation='relu'),
     MaxPooling2D(),
-    Dropout(0.2),
+    Dropout(0.4),
     Flatten(),
     Dense(512, activation='relu'),
     Dense(1, activation='sigmoid')
@@ -50,7 +50,7 @@ def main():
   
   model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['acc'])
 
-  train_datagen = ImageDataGenerator(rescale=1./255, rotation_range=45, horizontal_flip=True, zoom_range=0.)
+  train_datagen = ImageDataGenerator(rescale=1./255, rotation_range=45, horizontal_flip=True, zoom_range=0.25)
   test_datagen = ImageDataGenerator(rescale=1./255)
 
   train_generator = train_datagen.flow_from_directory(train_dir, target_size=(IMG_HEIGHT, IMG_WIDTH), batch_size=batch_size, class_mode='binary')
@@ -60,7 +60,7 @@ def main():
 #  checkpoint_cb = ModelCheckpoint("snapshot/{epoch:03d}-{val_loss:.5f}.hdf5", save_best_only=True)
 
  
-  history = model.fit_generator(train_generator, steps_per_epoch=15, epochs=_epochs, validation_data=validation_generator, validation_steps=50)#, callbacks=[checkpoint_cb])
+  history = model.fit_generator(train_generator, steps_per_epoch=batch_size, epochs=_epochs, validation_data=validation_generator, validation_steps=50)#, callbacks=[checkpoint_cb])
 
 
   model.save(os.path.join(base_dir, 'output/model.h5'))
