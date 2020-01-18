@@ -23,18 +23,14 @@ vector< string > get_all_image(string path) {
 
 int main(int argc, char *argv[]) {
 
-  if(argc < 3) {
-      cout << "error: number of arguments must be 2." << endl;
+  if(argc < 2) {
+      cout << "error: number of arguments must be 1." << endl;
       exit(0);
   }
 
   double train_p = atof(argv[1]);
   double validation_p = atof(argv[2]);
 
-  if(train_p + validation_p > 0.9) {
-    cout << "must be less than 0.9." << endl;
-    exit(0);
-  }
 
   vector< string > ok_list = get_all_image("./OK");
   vector< string > ng_list = get_all_image("./NG");
@@ -58,7 +54,7 @@ int main(int argc, char *argv[]) {
   cout << "* class NG: " << ng_num << endl;
   cout << "--- train: " << train_ng_num << endl;
   cout << "--- validation: " << validation_ng_num << endl;
-  cout << "--- test: " << test_ng_num << endl;
+
 
   random_device seed;
   mt19937 engine(seed());
