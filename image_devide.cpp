@@ -5,12 +5,21 @@
 #include <dirent.h>
 #include <random>
 #include <cstring>
+#include <unistd.h>
 using namespace std;
 
+
+bool gray_mode = false;
+int class_num = 2;
+
+string classes[] = {"OK", "NG", "STOP"};
+vector< string > labels;
+string base_path;
+
 vector< string > get_all_image(string path) {
+    cout << path << endl;
   DIR *dp;
   dirent *entry;
-
   dp = opendir(path.c_str());
   vector< string > ret;
   do {
@@ -21,75 +30,105 @@ vector< string > get_all_image(string path) {
   return ret;
 }
 
-bool gray_mode = false;
+void argerror(char *argv[]) {
+    cout << "Usage: " << argv[0] << "[-m argument] [-n argument] arg1 ..." << endl;
+    cout << "-m: select a mode" << endl;
+    cout << "  0: normal_image" << endl;
+    cout << "  1: grayscale_image" << endl;
+    cout << "-n: number of classes" << endl;
+}
+
+int parse_options(int argc, char *argv[]) {
+    int opt, success = 1;
+    opterr = 0;
+
+    while((opt = getopt(argc, argv, "gn:")) != -1) {
+        switch(opt) {
+            case 'g':
+                gray_mode = true;
+                break;
+            case 'n':
+                if(strcmp(optarg, "2") == 0) class_num = 2;
+                else if(strcmp(optarg, "3") == 0) class_num = 3;
+                else success = 0;
+                break;
+            default:
+                cout << "default" << endl;
+                success = 0;
+                break;
+        }
+    }
+
+    return success;
+}
+
+void set_class(int n) {
+    for(int i = 0; i < n; i++) {
+        labels.push_back(classes[i]);
+    }
+    if(n == 2) base_path = "./images/class-2/";
+    if(n == 3) base_path = "./images/class-3/";
+}
+
 
 int main(int argc, char *argv[]) {
 
-  if(argc < 2) {
-      cout << "error: number of arguments must be 1." << endl;
-      exit(0);
+  int success = parse_options(argc, argv);
+  if(!success) exit(0);
+
+  double train_p = atof(argv[argc - 1]);
+
+  set_class(class_num);
+  cout << "hoge " << endl;
+  vector< vector< string > > image_list(class_num, vector< string > ());
+  for(int i = 0; i < class_num; i++) {
+      image_list[i] = get_all_image(base_path + labels[i] + "/");
   }
-
-  if(argc == 4) {
-      if(argv[3][0] == '1') gray_mode = true;
+  cout << "hoge 1" << endl;
+  vector< int > nums, train_nums, validation_nums;
+  for(int i = 0; i < class_num; i++) {
+      nums.push_back(image_list[i].size());
+      train_nums.push_back((int)(nums[i] * train_p));
+      validation_nums.push_back(nums[i] - train_nums[i]);
   }
-
-  double train_p = atof(argv[1]);
-
-  vector< string > ok_list = get_all_image("./OK");
-  vector< string > ng_list = get_all_image("./NG");
-
-  int ok_num = ok_list.size();
-  int ng_num = ng_list.size();
-
-  int train_ok_num = ok_num * train_p;
-  int train_ng_num = ng_num * train_p;
-  int validation_ok_num = ok_num - train_ok_num;
-  int validation_ng_num = ng_num - train_ng_num;
-
-
-  cout << "* class OK: " << ok_num << endl;
-  cout << "--- train: " << train_ok_num << endl;
-  cout << "--- validation: " << validation_ok_num << endl;
-  cout << "* class NG: " << ng_num << endl;
-  cout << "--- train: " << train_ng_num << endl;
-  cout << "--- validation: " << validation_ng_num << endl;
-
+  cout << "hoge 2" << endl;
+  for(int i = 0; i < class_num; i++) {
+      cout << "** class " + labels[i] + " :" << nums[i] << endl;
+      cout << "---- train: " << train_nums[i] << endl;
+      cout << "---- validation: " << validation_nums[i] << endl;
+  }
 
   random_device seed;
   mt19937 engine(seed());
-  shuffle(ok_list.begin(), ok_list.end(), engine);
-  shuffle(ng_list.begin(), ng_list.end(), engine);
+  for(int i = 0; i < class_num; i++) {
+      shuffle(image_list[i].begin(), image_list[i].end(), engine);
+  }
 
   cout << "rm -rf ./train ./validation" << endl;
   system("rm -rf ./train ./validation");
-  cout << "mkdir -p train/OK train/NG" << endl;
-  system("mkdir -p train/OK train/NG");
-  cout << "mkdir -p validation/OK validation/NG" << endl;
-  system("mkdir -p validation/OK validation/NG");
-
-  for(int i = 0; i < ok_num; i++) {
-      if(i < train_ok_num) {
-          cout << "cp ./OK/" + ok_list[i] + " ./train/OK/" + ok_list[i] << endl;
-          system(("cp ./OK/" + ok_list[i] + " ./train/OK/" + ok_list[i]).c_str());
-          if(gray_mode) system(("convert ./train/OK/" + ok_list[i] + " -type GrayScale ./train/OK/" + ok_list[i]).c_str());
-      } else {
-          cout << "cp ./OK/" + ok_list[i] + " ./validation/OK/" + ok_list[i] << endl;
-          system(("cp ./OK/" + ok_list[i] + " ./validation/OK/" + ok_list[i]).c_str());
-          if(gray_mode) system(("convert ./validation/OK/" + ok_list[i] + " -type GrayScale ./validation/OK/" + ok_list[i]).c_str());
-      }
+  for(int i = 0; i < class_num; i++) {
+      string cmd = "mkdir -p train/" + labels[i];
+      cout << cmd << endl;
+      system(cmd.c_str());
+      cmd = "mkdir -p validation/" + labels[i];
+      cout << cmd << endl;
+      system(cmd.c_str());
   }
 
-  cout << endl;
-  for(int i = 0; i < ng_num; i++) {
-      if(i < train_ng_num) {
-          cout << "cp ./NG/" + ng_list[i] + " ./train/NG/" + ng_list[i] << endl;
-          system(("cp ./NG/" + ng_list[i] + " ./train/NG/" + ng_list[i]).c_str());
-          if(gray_mode) system(("convert ./train/NG/" + ng_list[i] + " -type GrayScale ./train/NG/" + ng_list[i]).c_str());
-      } else {
-          cout << "cp ./NG/" + ng_list[i] + " ./validation/NG/" + ng_list[i] << endl;
-          system(("cp ./NG/" + ng_list[i] + " ./validation/NG/" + ng_list[i]).c_str());
-          if(gray_mode) system(("convert ./validation/NG/" + ng_list[i] + " -type GrayScale ./validation/NG/" + ng_list[i]).c_str());
+
+  for(int i = 0; i < class_num; i++) {
+      for(int j = 0; j < nums[i]; j++) {
+          if(j < train_nums[i]) {
+              string cmd = "cp " + base_path + labels[i] + "/" + image_list[i][j] + " ./train/" + labels[i] + "/" + image_list[i][j];
+              cout << cmd << endl;
+              system(cmd.c_str());
+              if(gray_mode) system(("convert ./train/" + labels[i] + "/" + image_list[i][j] + " -type GrayScale ./train/" + labels[i] + "/" + image_list[i][j]).c_str());
+          } else {
+              string cmd = "cp " + base_path + labels[i] + "/" + image_list[i][j] + " ./validation/" + labels[i] + "/" + image_list[i][j];
+              cout << cmd << endl;
+              system(cmd.c_str());
+              if(gray_mode) system(("convert ./validation/" + labels[i] + "/" + image_list[i][j] + " -type GrayScale ./validation/" + labels[i] + "/" + image_list[i][j]).c_str());
+          }
       }
   }
 }
