@@ -14,16 +14,23 @@ IMG_WIDTH = 150
 _epochs = 200
 batch_size = 32
 
-def main():
   base_dir = '/home/ubuntu/project/ojt'
 
   train_dir = os.path.join(base_dir, 'train')
   validation_dir = os.path.join(base_dir, 'validation')
+  
+  labels = []
+  with open('./lables.txt', 'r') as f:
+    for line in f:
+      labels.append(line.rstrip())
+  print(labels)
 
-  num_train = len(os.listdir(os.path.join(train_dir, 'OK'))) + len(os.listdir(os.path.join(train_dir, 'NG')))
+  num_train = 0
+  num_validation = 0
 
-  num_validation = len(os.listdir(os.path.join(validation_dir, 'OK'))) + len(os.listdir(os.path.join(validation_dir, 'NG')))
-
+  for(label in labels):
+    num_train = num_train + len(os.listdir(os.path.join(train_dir, label)))
+    num_validation = num_validaiton + len(os.listdir(os.path.join(validation_dir, label)))
 
   print('train images : ' + str(num_train))
   print('validation images : ' + str(num_validation))
@@ -53,17 +60,18 @@ def main():
     Dropout(0.4),
     Flatten(),
     Dense(512, activation='relu'),
-    Dense(1, activation='sigmoid')
+    #Dense(1, activation='sigmoid')
+    Dense(3, activation='softmax')
   ])
   
-  model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['acc'])
+  model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['acc'])
 
   train_datagen = ImageDataGenerator(rescale=1./255, rotation_range=45, horizontal_flip=True, zoom_range=0.25)
   test_datagen = ImageDataGenerator(rescale=1./255)
 
-  train_generator = train_datagen.flow_from_directory(train_dir, target_size=(IMG_HEIGHT, IMG_WIDTH), batch_size=batch_size, class_mode='binary')
+  train_generator = train_datagen.flow_from_directory(train_dir, target_size=(IMG_HEIGHT, IMG_WIDTH), batch_size=batch_size, class_mode='categorical')
 
-  validation_generator = test_datagen.flow_from_directory(validation_dir, target_size=(IMG_HEIGHT, IMG_WIDTH), batch_size=batch_size, class_mode='binary')
+  validation_generator = test_datagen.flow_from_directory(validation_dir, target_size=(IMG_HEIGHT, IMG_WIDTH), batch_size=batch_size, class_mode='categorical')
 
 #  checkpoint_cb = ModelCheckpoint("snapshot/{epoch:03d}-{val_loss:.5f}.hdf5", save_best_only=True)
 
