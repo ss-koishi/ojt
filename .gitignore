@@ -2,7 +2,5 @@
 *.h5
 /train/
 /validation/
-/test/
 a.out
 /output/
-*.png
