@@ -1,6 +1,6 @@
 import os
 from tensorflow.python.keras.layers import Dense, Conv2D, Flatten, Dropout, MaxPooling2D
-from tensorflow.python.keras import models
+from tensorflow.python.keras import models, regularizers
 from tensorflow.python.keras import optimizers
 from tensorflow.python.keras.preprocessing.image import ImageDataGenerator
 
@@ -14,13 +14,15 @@ IMG_WIDTH = 150
 _epochs = 200
 batch_size = 32
 
+def main():
+
   base_dir = '/home/ubuntu/project/ojt'
 
   train_dir = os.path.join(base_dir, 'train')
   validation_dir = os.path.join(base_dir, 'validation')
   
   labels = []
-  with open('./lables.txt', 'r') as f:
+  with open('./labels.txt', 'r') as f:
     for line in f:
       labels.append(line.rstrip())
   print(labels)
@@ -28,9 +30,9 @@ batch_size = 32
   num_train = 0
   num_validation = 0
 
-  for(label in labels):
+  for label in labels:
     num_train = num_train + len(os.listdir(os.path.join(train_dir, label)))
-    num_validation = num_validaiton + len(os.listdir(os.path.join(validation_dir, label)))
+    num_validation = num_validation + len(os.listdir(os.path.join(validation_dir, label)))
 
   print('train images : ' + str(num_train))
   print('validation images : ' + str(num_validation))
@@ -50,23 +52,30 @@ batch_size = 32
 #  model.compile(loss='binary_crossentropy', optimizer=optimizers.RMSprop(lr=1e-4), metrics=['acc'])
   
   model = models.Sequential([
-    Conv2D(16, 3, padding='same', activation='relu', input_shape=(IMG_HEIGHT, IMG_WIDTH ,3)),
+    Conv2D(16, 3, padding='same', activation='relu', input_shape=(IMG_HEIGHT, IMG_WIDTH, 3)),
     MaxPooling2D(),
-    Dropout(0.4),
+    #Dropout(0.12),
     Conv2D(32, 3, padding='same', activation='relu'),
     MaxPooling2D(),
     Conv2D(64, 3, padding='same', activation='relu'),
     MaxPooling2D(),
-    Dropout(0.4),
+    Dropout(0.2),
     Flatten(),
-    Dense(512, activation='relu'),
+    Dense(256, activation='relu', activity_regularizer=regularizers.l2(l=0.001)),
+    Dropout(0.5),
     #Dense(1, activation='sigmoid')
     Dense(3, activation='softmax')
   ])
+
+  # Save JSON config to disk
+  json_config = model.to_json()
+  with open('net.json', 'w') as json_file:
+    json_file.write(json_config)
+  # Save weights to disk
   
   model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['acc'])
 
-  train_datagen = ImageDataGenerator(rescale=1./255, rotation_range=45, horizontal_flip=True, zoom_range=0.25)
+  train_datagen = ImageDataGenerator(rescale=1./255, rotation_range=30, horizontal_flip=True, zoom_range=0.25, width_shift_range=.10, height_shift_range=.10)
   test_datagen = ImageDataGenerator(rescale=1./255)
 
   train_generator = train_datagen.flow_from_directory(train_dir, target_size=(IMG_HEIGHT, IMG_WIDTH), batch_size=batch_size, class_mode='categorical')
