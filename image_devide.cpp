@@ -41,7 +41,7 @@ void argerror(char *argv[]) {
 int parse_options(int argc, char *argv[]) {
     int opt, success = 1;
     opterr = 0;
-
+    
     while((opt = getopt(argc, argv, "gn:")) != -1) {
         switch(opt) {
             case 'g':
