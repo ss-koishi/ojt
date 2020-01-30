@@ -1,9 +1,10 @@
 import os
-from tensorflow.python.keras.layers import Dense, Conv2D, Flatten, Dropout, MaxPooling2D
+from tensorflow.python.keras.layers import Dense, Conv2D, Flatten, Dropout, MaxPooling2D, GlobalAveragePooling2D, Activation, BatchNormalization
 from tensorflow.python.keras import models, regularizers
 from tensorflow.python.keras import optimizers
 from tensorflow.python.keras.preprocessing.image import ImageDataGenerator
-
+from tensorflow.python.keras.callbacks import ModelCheckpoint
+from tensorflow import layers
 import matplotlib
 matplotlib.use('Agg')
 
@@ -11,14 +12,14 @@ from matplotlib import pyplot as plt
 
 IMG_HEIGHT = 150
 IMG_WIDTH = 150
-_epochs = 200
-batch_size = 32
+_epochs = 1000
+batch_size = 16
 
 def main():
 
   base_dir = '/home/ubuntu/project/ojt'
 
-  train_dir = os.path.join(base_dir, 'train')
+  train_dir = os.path.join(base_dir, 'train') #/home/ubuntu/project/ojt/train
   validation_dir = os.path.join(base_dir, 'validation')
   
   labels = []
@@ -52,18 +53,29 @@ def main():
 #  model.compile(loss='binary_crossentropy', optimizer=optimizers.RMSprop(lr=1e-4), metrics=['acc'])
   
   model = models.Sequential([
-    Conv2D(16, 3, padding='same', activation='relu', input_shape=(IMG_HEIGHT, IMG_WIDTH, 3)),
+    Conv2D(16, 3, padding='same', input_shape=(IMG_HEIGHT, IMG_WIDTH, 3)),
+    #BatchNormalization(),
+    Activation('relu'),
+    Dropout(0.1),
+    Conv2D(16, 3, padding='same'),
+    #BatchNormalization(),
+    Activation('relu'),
+    Dropout(0.1),
     MaxPooling2D(),
-    #Dropout(0.12),
-    Conv2D(32, 3, padding='same', activation='relu'),
+    Conv2D(64, 3, padding='same'),
+    #BatchNormalization(),
+    Activation('relu'),
+    #Dropout(0.1),
+    #Conv2D(128, 3, padding='same'),
+    #BatchNormalization(),
+    #Activation('relu'),
+    #Dropout(0.1),
     MaxPooling2D(),
-    Conv2D(64, 3, padding='same', activation='relu'),
-    MaxPooling2D(),
-    Dropout(0.2),
-    Flatten(),
-    Dense(256, activation='relu', activity_regularizer=regularizers.l2(l=0.001)),
+    GlobalAveragePooling2D(),
+    Dense(256, activity_regularizer=regularizers.l2(l=0.001)),
+    #BatchNormalization(),
+    Activation('relu'),
     Dropout(0.5),
-    #Dense(1, activation='sigmoid')
     Dense(3, activation='softmax')
   ])
 
@@ -82,10 +94,10 @@ def main():
 
   validation_generator = test_datagen.flow_from_directory(validation_dir, target_size=(IMG_HEIGHT, IMG_WIDTH), batch_size=batch_size, class_mode='categorical')
 
-#  checkpoint_cb = ModelCheckpoint("snapshot/{epoch:03d}-{val_loss:.5f}.hdf5", save_best_only=True)
+  checkpoint_cb = ModelCheckpoint("snapshot/{epoch:03d}-{val_loss:.5f}.h5", save_best_only=True)
 
  
-  history = model.fit_generator(train_generator, steps_per_epoch=num_train, epochs=_epochs, validation_data=validation_generator, validation_steps=num_validation)#, callbacks=[checkpoint_cb])
+  history = model.fit_generator(train_generator, steps_per_epoch=num_train, epochs=_epochs, validation_data=validation_generator, validation_steps=num_validation, callbacks=[checkpoint_cb])
 
 
   model.save(os.path.join(base_dir, 'output/model.h5'))
