@@ -41,7 +41,7 @@ void argerror(char *argv[]) {
 int parse_options(int argc, char *argv[]) {
     int opt, success = 1;
     opterr = 0;
-    
+
     while((opt = getopt(argc, argv, "gn:")) != -1) {
         switch(opt) {
             case 'g':
@@ -56,7 +56,7 @@ int parse_options(int argc, char *argv[]) {
                 cout << "default" << endl;
                 success = 0;
                 break;
-        }
+         }
     }
 
     return success;
@@ -68,6 +68,7 @@ void set_class(int n) {
     }
     if(n == 2) base_path = "./images/class-2/";
     if(n == 3) base_path = "./images/class-3/";
+    if(n == 4) base_path = "./images/class-4/";
 }
 
 

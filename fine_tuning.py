@@ -21,26 +21,28 @@ batch_size = 16
 def main():
 
   base_model = VGG16(weights='imagenet', include_top=False, input_shape=(IMG_HEIGHT, IMG_WIDTH, 3))
-  
+
   added_model = models.Sequential([
     GlobalAveragePooling2D(),
     #MaxPooling2D(),
     #Flatten(),
-    Dense(512, activation='relu', activity_regularizer=regularizers.l2(l=0.001)),
+    Dense(1024, activation='relu', activity_regularizer=regularizers.l2(l=0.001)),
+    Dropout(0.4),
     Dense(256, activation='relu', activity_regularizer=regularizers.l2(l=0.001)),
+    Dropout(0.4)
     Dense(3, activation='softmax'),
   ])
 
   model = models.Model(inputs=base_model.input, outputs=added_model(base_model.output))
   model.summary()
-  
+
   for layer in model.layers[:15]:
       layer.trainable = False
 
   model.compile(optimizer=optimizers.SGD(lr=0.0001, momentum=0.9), loss='categorical_crossentropy', metrics=['acc'])
- 
+
   print(model.output.op.name)
-  
+
   base_dir = '/home/ubuntu/project/ojt'
 
   train_dir = os.path.join(base_dir, 'train')
@@ -98,5 +100,5 @@ def main():
 
   plt.savefig('result.png')
 
-if __name__ == "__main__": 
+if __name__ == "__main__":
   main()
