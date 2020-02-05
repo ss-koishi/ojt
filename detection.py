@@ -11,6 +11,7 @@ import time
 import threading
 import os
 import gc
+from datetime import datetime as dt
 
 from pymodbus.client.sync import ModbusTcpClient as mtc
 
@@ -34,11 +35,29 @@ def triming(img):
 
     img = img[y:y + h, x:x + w]
     return img
-    
+   
+
+
+def send_error(res):
+    MODBUS_IP = '192.168.2.3' # modbus ip address
+    destination = 5
+    unit = 2
+
+    client = mtc(MODBUS_IP)
+    client.connect()
+
+    data = None
+    if res:
+        data = 1
+    else: 
+        data = 0
+
+    client.write_register(destination, data, unit=unit)
 
 def send_prediction(pred):
     MODBUS_IP = '192.168.2.3' # modbus ip address
-    destination = 40001
+    destination = 1
+    unit = 2
 
     client = mtc(MODBUS_IP)
     client.connect()
@@ -51,31 +70,71 @@ def send_prediction(pred):
     else:
         data = 3
 
-    client.write_register(destination, data)
+    client.write_register(destination, data, unit=unit)
 
 
+prev_image = None
 def get_image():
     user = 'nishio'
     password = 'decs'
     server = 'FvIoT'
     server_ip = '192.168.2.9'
     home = 'Camera'
-    path = 'TEST1/2020_02_04-2020_02_04'
+    path = 'TEST1'
+    global prev_image
 
     pipe = samba(user, password, platform.node(), server)
     pipe.connect(server_ip, 139)
 
+    dirc = None 
     ret = None # stored Sharedfile class
-    items = pipe.listPath(home, path)
-    for item in items:
-        ret = item
 
+    dirs = pipe.listPath(home, path)
+    dirc = next(reversed(dirs))
+    items = reversed(pipe.listPath(home, os.path.join(path, dirc.filename)))
+    next(items)
+    ret = next(items)
+    
+    send_error(prev_image == ret.filename)
+    prev_image = ret.filename
+    
     # download image
     local_path = './cached/images'
     with open(os.path.join(local_path, 'img.jpg'), 'wb') as f:
-        pipe.retrieveFile(home, os.path.join(path, ret.filename), f)
+        pipe.retrieveFile(home, os.path.join(path, os.path.join(dirc.filename, ret.filename)), f)
 
-    return (ret.filename, os.path.join(local_path, 'img.jpg'))
+    return ((os.path.join(home, os.path.join(path, dirc.filename)), ret.filename), os.path.join(local_path, 'img.jpg'))
+
+
+
+def write_log(context, filename):
+    user = 'nishio'
+    password = 'decs'
+    server = 'FvIoT'
+    server_ip = '192.168.2.9'
+    home = 'Jetson'
+    path = 'EW01/RES01'
+
+    pipe = samba(user, password, platform.node(), server)
+    pipe.connect(server_ip, 139)
+
+    isExist = False
+    files = pipe.listPath(home, path)
+    for name in files:
+        if filename == name.filename:
+            isExist = True
+
+    if isExist:
+        with open(os.path.join('./cached/logs', 'logs.log'), 'wb') as f:
+            pipe.retrieveFile(home, os.path.join(path, filename), f)
+    
+    with open(os.path.join('./cached/logs', 'logs.log'), 'a') as f:
+        f.write(context)
+         
+         
+    with open(os.path.join('./cached/logs', 'logs.log'), 'rb') as f:
+        pipe.storeFile(home, os.path.join(path, filename), f)
+    
 
 
 def prediction(data):
@@ -111,8 +170,10 @@ def prediction(data):
             tmp_max_pred = i
         label_num += 1
 
-    with open('test.log', 'a') as f:
-        f.write(pred_label + ' ' + data[0] + '\n')
+    log_text = dt.now().strftime('%Y/%m/%d-%H:%M:%S') + ',' + pred_label + ',' + data[0][0]  + ',' + data[0][1] + '\n'
+    log_file = dt.now().strftime('%Y%m%d') + '.log'
+    write_log(log_text, log_file)
+        
     
     print(pred_label)
     return pred_label
