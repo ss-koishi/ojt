@@ -35,7 +35,7 @@ def triming(img):
 
     img = img[y:y + h, x:x + w]
     return img
-   
+
 
 
 def send_error(res):
@@ -49,7 +49,7 @@ def send_error(res):
     data = None
     if res:
         data = 1
-    else: 
+    else:
         data = 0
 
     client.write_register(destination, data, unit=unit)
@@ -86,18 +86,19 @@ def get_image():
     pipe = samba(user, password, platform.node(), server)
     pipe.connect(server_ip, 139)
 
-    dirc = None 
+    dirc = None
     ret = None # stored Sharedfile class
 
     dirs = pipe.listPath(home, path)
     dirc = next(reversed(dirs))
+
     items = reversed(pipe.listPath(home, os.path.join(path, dirc.filename)))
     next(items)
     ret = next(items)
-    
+
     send_error(prev_image == ret.filename)
     prev_image = ret.filename
-    
+
     # download image
     local_path = './cached/images'
     with open(os.path.join(local_path, 'img.jpg'), 'wb') as f:
@@ -127,14 +128,14 @@ def write_log(context, filename):
     if isExist:
         with open(os.path.join('./cached/logs', 'logs.log'), 'wb') as f:
             pipe.retrieveFile(home, os.path.join(path, filename), f)
-    
+
     with open(os.path.join('./cached/logs', 'logs.log'), 'a') as f:
         f.write(context)
-         
-         
+
+
     with open(os.path.join('./cached/logs', 'logs.log'), 'rb') as f:
         pipe.storeFile(home, os.path.join(path, filename), f)
-    
+
 
 
 def prediction(data):
@@ -173,8 +174,8 @@ def prediction(data):
     log_text = dt.now().strftime('%Y/%m/%d-%H:%M:%S') + ',' + pred_label + ',' + data[0][0]  + ',' + data[0][1] + '\n'
     log_file = dt.now().strftime('%Y%m%d') + '.log'
     write_log(log_text, log_file)
-        
-    
+
+
     print(pred_label)
     return pred_label
 
@@ -204,7 +205,7 @@ def main():
         for line in f:
             labels.append(line.rstrip())
     print(labels)
-    
+
     global model_pred
     model_pred = load_model(args.model)
     scheduler(60, start)
